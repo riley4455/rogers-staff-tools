@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quote to Unleashed — Rogers Electro-Mechanical</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sen:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Rogers Electro-Mechanical brand tokens (Splash Media visual identity 2025)
+   Ready Red #B72F2D · Oil Black #221F20 · Chrome Grey #D8D8D5
+   Steel Grey #243746 · Electric Blue #006394 · Coil Orange #F5811F
+   Typeface: Sen — specified for all body and heading text.
+   Dark theme swaps the accent to Coil Orange: the brand's contrast table puts
+   Ready Red on Steel Grey at 2.02:1 (fail), Coil Orange at 4.92:1 (pass). */
+:root{
+  --bg:#F2F2F0; --panel:#FFFFFF; --panel-2:#F8F8F6;
+  --ink:#221F20; --muted:#5E5C5D; --line:#D8D8D5;
+  --accent:#B72F2D; --accent-ink:#FFFFFF;
+  --ok:#006394;   --ok-bg:#E4EFF5;
+  --warn:#9A4E08; --warn-bg:#FDF0E2;
+  --bad:#B72F2D;  --bad-bg:#F8E9E9;
+  --skip:#5E5C5D; --skip-bg:#ECECE9;
+  --sans:"Sen",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --radius:5px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#1B2936; --panel:#243746; --panel-2:#2C4152;
+    --ink:#EDEFF1; --muted:#A3B1BE; --line:#354B5C;
+    --accent:#F5811F; --accent-ink:#221F20;
+    --ok:#5AA9D6;   --ok-bg:#16303F;
+    --warn:#F5811F; --warn-bg:#3A2A16;
+    --bad:#E8817F;  --bad-bg:#3B2222;
+    --skip:#A3B1BE; --skip-bg:#2C4152;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1B2936; --panel:#243746; --panel-2:#2C4152;
+  --ink:#EDEFF1; --muted:#A3B1BE; --line:#354B5C;
+  --accent:#F5811F; --accent-ink:#221F20;
+  --ok:#5AA9D6;   --ok-bg:#16303F;
+  --warn:#F5811F; --warn-bg:#3A2A16;
+  --bad:#E8817F;  --bad-bg:#3B2222;
+  --skip:#A3B1BE; --skip-bg:#2C4152;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+     font-family:var(--sans);font-size:15px;line-height:1.5}
+.wrap{max-width:1120px;margin:0 auto;padding:24px 20px 80px}
+h1{font-size:26px;font-weight:800;letter-spacing:-.015em;margin:0 0 4px}
+h2{font-size:17px;font-weight:700;margin:0 0 12px;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:0 0 24px;font-size:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+      padding:20px;margin-bottom:16px}
+label{display:block;font-size:12.5px;font-weight:700;margin-bottom:5px;letter-spacing:.01em}
+input,select,button{font:inherit;color:inherit}
+input[type=text],input[type=email],input[type=password],select{
+  width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:4px;
+  background:var(--bg);color:var(--ink)}
+input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button{padding:10px 18px;border-radius:4px;border:1px solid transparent;cursor:pointer;
+       font-weight:700;letter-spacing:.01em}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.primary{background:var(--accent);color:var(--accent-ink)}
+.ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.row>div{flex:1;min-width:180px}
+.drop{border:2px dashed var(--line);border-radius:var(--radius);padding:34px;text-align:center;
+      color:var(--muted);cursor:pointer;transition:border-color .15s,color .15s}
+.drop:hover,.drop.over{border-color:var(--accent);color:var(--accent)}
+.tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.tabs button{background:transparent;border:1px solid var(--line);color:var(--muted);font-weight:600}
+.tabs button[aria-selected=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:760px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);
+   position:sticky;top:0;background:var(--panel-2)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10.5px;font-weight:700;
+     text-transform:uppercase;letter-spacing:.07em;white-space:nowrap}
+.t-add{background:var(--ok-bg);color:var(--ok)}
+.t-skip{background:var(--skip-bg);color:var(--skip)}
+.t-mismatch{background:var(--warn-bg);color:var(--warn)}
+.t-unmapped,.t-failed{background:var(--bad-bg);color:var(--bad)}
+.note{font-size:12.5px;color:var(--muted);margin-top:3px}
+.banner{padding:12px 14px;border-radius:4px;margin-bottom:14px;font-size:14px;
+        border:1px solid transparent}
+.b-warn{background:var(--warn-bg);color:var(--warn);border-color:color-mix(in srgb,var(--warn) 22%,transparent)}
+.b-bad{background:var(--bad-bg);color:var(--bad);border-color:color-mix(in srgb,var(--bad) 22%,transparent)}
+.b-ok{background:var(--ok-bg);color:var(--ok);border-color:color-mix(in srgb,var(--ok) 22%,transparent)}
+.stats{display:flex;gap:22px;flex-wrap:wrap;margin:14px 0}
+.stat b{display:block;font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;
+        letter-spacing:-.02em}
+.stat span{font-size:11.5px;color:var(--muted)}
+.hide{display:none}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:12px;
+      margin-top:18px;flex-wrap:wrap}
+/* Product codes stay monospaced: 50047 vs 50O47 must be readable at a glance. */
+code{font-family:var(--mono);background:var(--skip-bg);padding:1px 5px;border-radius:3px;
+     font-size:12.5px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Quote → Unleashed</h1>
+  <p class="sub">Adds accepted-quote labour and service lines onto the matching work order.
+     Nothing is written until you review the preview and confirm.</p>
+
+  <!-- ── sign in ───────────────────────────────────────────────── -->
+  <div class="card" id="loginCard">
+    <h2>Sign in</h2>
+    <div class="row">
+      <div><label for="email">Email</label><input id="email" type="email" autocomplete="username"></div>
+      <div><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password"></div>
+      <div style="flex:0 0 auto"><button class="primary" id="signIn">Sign in</button></div>
+      <div style="flex:0 0 auto"><button class="ghost" id="resetPw">Email me a reset link</button></div>
+    </div>
+    <div id="loginMsg" class="note"></div>
+  </div>
+
+  <!-- ── app ───────────────────────────────────────────────────── -->
+  <div id="app" class="hide">
+    <div class="card">
+      <div class="foot" style="margin:0 0 16px">
+        <div><strong id="whoName"></strong> <span class="note" id="whoLoc"></span></div>
+        <button class="ghost" id="signOut">Sign out</button>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button id="tabQuote" role="tab" aria-selected="true">Pick an accepted quote</button>
+        <button id="tabFile"  role="tab" aria-selected="false">Upload a spreadsheet</button>
+      </div>
+
+      <!-- quote picker -->
+      <div id="paneQuote">
+        <label for="quoteSel">Accepted quotes</label>
+        <select id="quoteSel"><option value="">Loading…</option></select>
+        <div class="note">Only quotes marked approved are listed. Choose one, then set the work order below.</div>
+      </div>
+
+      <!-- file upload -->
+      <div id="paneFile" class="hide">
+        <div class="drop" id="drop">
+          <strong>Drop the quote spreadsheet here</strong><br>
+          <span class="note">.xlsx, .xls or .csv — or click to browse</span>
+          <input type="file" id="file" accept=".xlsx,.xls,.csv" class="hide">
+        </div>
+        <div id="sheetPick" class="hide" style="margin-top:14px">
+          <div class="row">
+            <div><label for="sheetSel">Sheet</label><select id="sheetSel"></select></div>
+            <div><label for="headerRow">Header row</label><input id="headerRow" type="text" value="1"></div>
+          </div>
+        </div>
+        <div id="colMap" class="hide" style="margin-top:14px">
+          <h2 style="margin-top:6px">Which column is which?</h2>
+          <div class="row">
+            <div><label for="cDesc">Description</label><select id="cDesc"></select></div>
+            <div><label for="cQty">Quantity</label><select id="cQty"></select></div>
+            <div><label for="cPrice">Unit price</label><select id="cPrice"></select></div>
+            <div><label for="cCode">Product code <span class="note">(optional)</span></label><select id="cCode"></select></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:18px">
+        <div>
+          <label for="wo">Work order number</label>
+          <input id="wo" type="text" placeholder="WO-00742952" autocapitalize="characters">
+        </div>
+        <div>
+          <label for="loc">Location</label>
+          <select id="loc">
+            <option>Bathurst</option><option>Moncton</option><option>Dartmouth</option>
+            <option>Stewiacke</option><option>Wabush</option><option>Mount Pearl</option>
+          </select>
+        </div>
+        <div style="flex:0 0 auto"><button class="primary" id="build">Match lines</button></div>
+      </div>
+      <div id="buildMsg" class="note"></div>
+    </div>
+
+    <!-- ── matched lines ─────────────────────────────────────────── -->
+    <div class="card hide" id="linesCard">
+      <h2>Lines from the quote</h2>
+      <div id="mapWarn"></div>
+      <div class="scroll">
+        <table id="linesTbl">
+          <thead><tr>
+            <th>Quote wording</th><th>Product code</th><th class="num">Qty</th>
+            <th class="num">Unit price</th><th class="num">Total</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="foot">
+        <div class="note">Edit any code, quantity or price before previewing. Untick a row to leave it out.</div>
+        <button class="primary" id="preview">Preview against Unleashed</button>
+      </div>
+    </div>
+
+    <!-- ── preview / result ──────────────────────────────────────── -->
+    <div class="card hide" id="planCard">
+      <h2 id="planTitle">Preview</h2>
+      <div id="planBanner"></div>
+      <div class="stats" id="planStats"></div>
+      <div class="scroll">
+        <table id="planTbl">
+          <thead><tr>
+            <th>Line</th><th>Product code</th><th>Unleashed calls this</th>
+            <th class="num">Qty</th><th class="num">Unit price</th><th class="num">Total</th><th>Result</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="foot">
+        <div class="note" id="planFoot"></div>
+        <button class="primary" id="commit">Add these lines to Unleashed</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ───────────────────────────────────────────────────────────────────
+// Config. The publishable key is safe in the browser - it only ever
+// grants what RLS allows. The UNLEASHED key is NOT here and never will
+// be: it lives as a secret on the unleashed-import-lines Edge Function,
+// which is the only thing that talks to Unleashed.
+// ───────────────────────────────────────────────────────────────────
+const SUPABASE_URL = "https://rsunamocbpilhrdqofgm.supabase.co";
+// Legacy anon key - the same one the rest of the Staff Hub uses, so this page
+// behaves identically to every other screen staff already sign in to.
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJzdW5hbW9jYnBpbGhyZHFvZmdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1NDc5MzUsImV4cCI6MjEwMjEyMzkzNX0.ce7ZreIOrRMtsNGIYZultA55X6ESC-wbwv4oYogC9Bc";
+const FN = SUPABASE_URL + "/functions/v1/unleashed-import-lines";
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = (id) => document.getElementById(id);
+const money = (n) => (Number(n)||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const norm = (s) => String(s??"").trim().toLowerCase().replace(/\s+/g," ");
+
+let codeMap = {};        // normalised quote wording -> {product_code, note}
+let rows = [];           // working set shown in the lines table
+let grid = [];           // raw sheet rows (array of arrays)
+let lastPlan = null;
+
+// ── auth ───────────────────────────────────────────────────────────
+async function boot(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(!session) return;
+  const { data: emp } = await sb.from("employees")
+    .select("first_name,last_name,location,role").eq("user_id", session.user.id).maybeSingle();
+  $("loginCard").classList.add("hide");
+  $("app").classList.remove("hide");
+  $("whoName").textContent = emp ? `${emp.first_name} ${emp.last_name}` : session.user.email;
+  $("whoLoc").textContent  = emp?.location ? `· ${emp.location}` : "";
+  if(emp?.location) $("loc").value = emp.location;
+  await Promise.all([loadCodeMap(), loadQuotes()]);
+}
+$("signIn").onclick = async () => {
+  const msg = $("loginMsg");
+  msg.textContent = "Signing in…";
+  const email = $("email").value.trim();
+  if(!email || !$("pw").value){ msg.textContent = "Enter both email and password."; return; }
+  const { error } = await sb.auth.signInWithPassword({ email, password:$("pw").value });
+  if(!error){ msg.textContent = ""; return boot(); }
+  // Say what actually went wrong rather than a generic failure.
+  const m = (error.message||"").toLowerCase();
+  msg.textContent =
+    m.includes("invalid login")   ? "Wrong email or password. Use the reset link if you are not sure."
+  : m.includes("email not confirmed") ? "That account has not confirmed its email yet."
+  : m.includes("failed to fetch")     ? "Could not reach Supabase. If you opened this file directly, "
+                                        + "serve it over http instead (see the note below)."
+  : `${error.message} (status ${error.status ?? "?"})`;
+};
+
+$("resetPw").onclick = async () => {
+  const email = $("email").value.trim();
+  if(!email){ $("loginMsg").textContent = "Type your email address first."; return; }
+  $("loginMsg").textContent = "Sending…";
+  const opts = location.protocol.startsWith("http") ? { redirectTo: location.href } : undefined;
+  const { error } = await sb.auth.resetPasswordForEmail(email, opts);
+  $("loginMsg").textContent = error
+    ? error.message
+    : `Reset link sent to ${email}. Follow it, set a new password, then sign in here.`;
+};
+$("pw").addEventListener("keydown", e => { if(e.key==="Enter") $("signIn").click(); });
+$("signOut").onclick = async () => { await sb.auth.signOut(); location.reload(); };
+
+// ── reference data ─────────────────────────────────────────────────
+async function loadCodeMap(){
+  const { data } = await sb.from("unleashed_code_map")
+    .select("quote_text,product_code,location,note").eq("active", true);
+  codeMap = {};
+  for(const r of (data||[])) codeMap[`${r.location}|${norm(r.quote_text)}`] = r;
+}
+async function loadQuotes(){
+  const { data } = await sb.from("quotes")
+    .select("id,quote_number,customer_name,customer_company,approval_status,created_at")
+    .eq("approval_status","approved").order("created_at",{ascending:false}).limit(100);
+  const sel = $("quoteSel");
+  sel.innerHTML = '<option value="">— select —</option>';
+  for(const q of (data||[])){
+    const o = document.createElement("option");
+    o.value = q.id;
+    o.textContent = `${q.quote_number||"(no number)"} — ${q.customer_company||q.customer_name||""}`;
+    sel.appendChild(o);
+  }
+  if(!data || !data.length) sel.innerHTML = '<option value="">No approved quotes found</option>';
+}
+
+// ── tabs ───────────────────────────────────────────────────────────
+function tab(which){
+  const q = which==="quote";
+  $("tabQuote").setAttribute("aria-selected", q);
+  $("tabFile").setAttribute("aria-selected", !q);
+  $("paneQuote").classList.toggle("hide", !q);
+  $("paneFile").classList.toggle("hide", q);
+}
+$("tabQuote").onclick = () => tab("quote");
+$("tabFile").onclick  = () => tab("file");
+
+// ── spreadsheet ────────────────────────────────────────────────────
+$("drop").onclick = () => $("file").click();
+["dragenter","dragover"].forEach(e => $("drop").addEventListener(e, ev => {
+  ev.preventDefault(); $("drop").classList.add("over"); }));
+["dragleave","drop"].forEach(e => $("drop").addEventListener(e, ev => {
+  ev.preventDefault(); $("drop").classList.remove("over"); }));
+$("drop").addEventListener("drop", ev => { if(ev.dataTransfer.files[0]) readFile(ev.dataTransfer.files[0]); });
+$("file").onchange = e => { if(e.target.files[0]) readFile(e.target.files[0]); };
+
+let workbook = null;
+function readFile(f){
+  const fr = new FileReader();
+  fr.onload = ev => {
+    workbook = XLSX.read(ev.target.result, { type:"array" });
+    const sel = $("sheetSel"); sel.innerHTML = "";
+    workbook.SheetNames.forEach(n => sel.add(new Option(n,n)));
+    $("sheetPick").classList.remove("hide");
+    $("drop").querySelector("strong").textContent = f.name;
+    loadSheet(true);
+  };
+  fr.readAsArrayBuffer(f);
+}
+$("sheetSel").onchange = () => loadSheet(true);
+$("headerRow").onchange = () => loadSheet(false);
+
+// Rogers invoice sheets carry a letterhead block first, so the real header row
+// is well down the page (row 17 on the ArcelorMittal invoices). Find the row
+// that actually looks like a header instead of assuming row 1.
+function findHeaderRow(g){
+  const words = /descript|quantity|hours|price|amount|^item$|article|part/i;
+  let best = 0, bestScore = 0;
+  for(let i = 0; i < Math.min(g.length, 60); i++){
+    const score = (g[i]||[]).filter(c => words.test(String(c||"").trim())).length;
+    if(score > bestScore){ bestScore = score; best = i; }
+  }
+  return bestScore >= 3 ? best : 0;
+}
+
+// The work order lives in a labelled cell near the top, as a bare number.
+// Unleashed wants it zero-padded behind a WO- prefix.
+function findWorkOrder(g){
+  for(let i = 0; i < Math.min(g.length, 40); i++){
+    const row = g[i] || [];
+    for(let c = 0; c < row.length; c++){
+      if(/work\s*order/i.test(String(row[c]||""))){
+        for(let k = c+1; k < row.length; k++){
+          const digits = String(row[k] ?? "").replace(/\D/g, "");
+          if(digits.length >= 5) return "WO-" + digits.padStart(8, "0");
+        }
+      }
+    }
+  }
+  return "";
+}
+
+function loadSheet(autodetect){
+  const ws = workbook.Sheets[$("sheetSel").value];
+  grid = XLSX.utils.sheet_to_json(ws, { header:1, blankrows:true, defval:"" });
+  if(autodetect){
+    $("headerRow").value = findHeaderRow(grid) + 1;
+    const wo = findWorkOrder(grid);
+    if(wo && !$("wo").value.trim()) $("wo").value = wo;
+  }
+  const hr = Math.max(1, parseInt($("headerRow").value)||1) - 1;
+  const header = (grid[hr]||[]).map((h,i) => String(h||"").trim() || `Column ${i+1}`);
+  ["cDesc","cQty","cPrice","cCode"].forEach(id => {
+    const s = $(id); s.innerHTML = '<option value="">— none —</option>';
+    header.forEach((h,i) => s.add(new Option(h, String(i))));
+  });
+  // Best-effort auto-detect, including the Unleashed SalesOrder template.
+  const guess = (pats) => {
+    for(const p of pats){
+      const i = header.findIndex(h => p.test(h));
+      if(i >= 0) return String(i);
+    }
+    return "";
+  };
+  $("cDesc").value  = guess([/line comment/i, /descript/i, /task/i, /operation/i, /item/i]);
+  $("cQty").value   = guess([/order quantity/i, /^qty/i, /quantity/i, /hours?/i]);
+  $("cPrice").value = guess([/unit price/i, /rate/i, /price/i, /each/i]);
+  $("cCode").value  = guess([/product code/i, /^code$/i, /article/i, /part ?no/i, /item ?code/i]);
+  $("colMap").classList.remove("hide");
+}
+
+// ── build the working set ──────────────────────────────────────────
+$("build").onclick = async () => {
+  $("buildMsg").textContent = "";
+  const loc = $("loc").value;
+  rows = [];
+  try {
+    if($("tabQuote").getAttribute("aria-selected") === "true"){
+      const qid = $("quoteSel").value;
+      if(!qid) throw new Error("Pick a quote first.");
+      const { data, error } = await sb.from("quote_line_items")
+        .select("description,qty,unit_price,labour_code,part_no,line_kind,sort_order")
+        .eq("quote_id", qid).order("sort_order");
+      if(error) throw error;
+      rows = (data||[]).map(r => ({
+        text: r.description || "",
+        code: r.labour_code || r.part_no || lookup(r.description, loc),
+        qty: Number(r.qty)||0,
+        price: Number(r.unit_price)||0,
+        use: true,
+      }));
+      const q = $("quoteSel").selectedOptions[0]?.textContent || "";
+      window.__sourceRef = q; window.__source = "quote";
+    } else {
+      const hr = Math.max(1, parseInt($("headerRow").value)||1) - 1;
+      const ci = { d:$("cDesc").value, q:$("cQty").value, p:$("cPrice").value, c:$("cCode").value };
+      if(ci.d === "" || ci.q === "" || ci.p === "") throw new Error("Pick the description, quantity and price columns.");
+      for(let i = hr+1; i < grid.length; i++){
+        const r = grid[i] || [];
+        const text = String(r[ci.d] ?? "").trim();
+        const qty = parseFloat(String(r[ci.q] ?? "").replace(/[^0-9.\-]/g,""));
+        const price = parseFloat(String(r[ci.p] ?? "").replace(/[^0-9.\-]/g,""));
+        if(!text || !isFinite(qty) || qty <= 0 || !isFinite(price)) continue;
+        rows.push({ text, code: (ci.c !== "" ? String(r[ci.c]??"").trim() : "") || lookup(text, loc),
+                    qty, price, use:true });
+      }
+      window.__sourceRef = $("drop").querySelector("strong").textContent; window.__source = "excel";
+    }
+    if(!rows.length) throw new Error("No usable lines found. Check the column choices or the header row.");
+    renderLines();
+  } catch(e){
+    $("buildMsg").textContent = e.message || String(e);
+  }
+};
+function lookup(text, loc){ return codeMap[`${loc}|${norm(text)}`]?.product_code || ""; }
+
+function renderLines(){
+  const tb = $("linesTbl").querySelector("tbody");
+  tb.innerHTML = "";
+  rows.forEach((r, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+      `<td>${escapeHtml(r.text)}</td>
+       <td><input type="text" value="${escapeHtml(r.code)}" data-i="${i}" data-f="code" style="min-width:130px"></td>
+       <td class="num"><input type="text" value="${r.qty}" data-i="${i}" data-f="qty" style="width:80px;text-align:right"></td>
+       <td class="num"><input type="text" value="${r.price}" data-i="${i}" data-f="price" style="width:100px;text-align:right"></td>
+       <td class="num">${money(r.qty*r.price)}</td>
+       <td><input type="checkbox" ${r.use?"checked":""} data-i="${i}" data-f="use"></td>`;
+    tb.appendChild(tr);
+  });
+  tb.oninput = e => {
+    const i = e.target.dataset.i, f = e.target.dataset.f;
+    if(i === undefined) return;
+    rows[i][f] = f === "use" ? e.target.checked
+               : (f === "code" ? e.target.value.trim() : parseFloat(e.target.value) || 0);
+    if(f !== "use" && f !== "code"){
+      e.target.closest("tr").children[4].textContent = money(rows[i].qty * rows[i].price);
+    }
+  };
+  const missing = rows.filter(r => r.use && !r.code).length;
+  $("mapWarn").innerHTML = missing
+    ? `<div class="banner b-warn"><strong>${missing} line${missing>1?"s have":" has"} no product code.</strong>
+       Type the code in, or untick the row. Nothing with a blank code can be sent.</div>`
+    : "";
+  $("linesCard").classList.remove("hide");
+  $("planCard").classList.add("hide");
+  $("linesCard").scrollIntoView({behavior:"smooth", block:"start"});
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+// ── preview / commit ───────────────────────────────────────────────
+async function call(mode){
+  const wo = $("wo").value.trim().toUpperCase();
+  if(!wo) throw new Error("Enter the work order number.");
+  const lines = rows.filter(r => r.use && r.code)
+                    .map(r => ({ code:r.code, qty:r.qty, price:r.price, comment:r.text }));
+  if(!lines.length) throw new Error("Nothing to send — every row is unticked or missing a code.");
+  const { data:{ session } } = await sb.auth.getSession();
+  const res = await fetch(FN, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json", "Authorization":`Bearer ${session.access_token}` },
+    body: JSON.stringify({ orderNumber:wo, mode, lines,
+                           source: window.__source||"excel", sourceRef: window.__sourceRef||null }),
+  });
+  const out = await res.json();
+  if(out.error) throw new Error(out.error);
+  return out;
+}
+
+$("preview").onclick = async () => {
+  $("preview").disabled = true;
+  try { renderPlan(await call("preview")); }
+  catch(e){ alert(e.message || e); }
+  finally { $("preview").disabled = false; }
+};
+
+$("commit").onclick = async () => {
+  const c = lastPlan?.counts?.add || 0;
+  if(!confirm(`Add ${c} line${c===1?"":"s"} to ${lastPlan.orderNumber}?\n\nThis writes to Unleashed and cannot be undone from here.`)) return;
+  $("commit").disabled = true;
+  try { renderPlan(await call("commit")); }
+  catch(e){ alert(e.message || e); $("commit").disabled = false; }
+};
+
+function renderPlan(p){
+  lastPlan = p;
+  const done = p.mode === "commit";
+  $("planTitle").textContent = done ? "Result" : "Preview — nothing has been written yet";
+  const c = p.counts;
+  const blockers = c.mismatched + c.unmapped;
+
+  $("planStats").innerHTML = [
+    [done ? c.added : c.add, done ? "added" : "will be added"],
+    [c.skipped, "already there"],
+    [c.mismatched, "price/qty mismatch"],
+    [c.unmapped, "unknown code"],
+    [c.failed, "failed"],
+    ["$"+money(p.valueOfAdds), done ? "value added" : "value to add"],
+  ].map(([v,l]) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`).join("");
+
+  let banner = `<div class="banner b-ok"><strong>${p.orderNumber}</strong> — ${escapeHtml(p.customer||"")},
+    status ${p.orderStatus}, ${p.existingLineCount} lines already on it.
+    Subtotal $${money(p.currentSubTotal)} → <strong>$${money(p.projectedSubTotal)}</strong>.</div>`;
+  if(c.mismatched) banner += `<div class="banner b-warn"><strong>${c.mismatched} line${c.mismatched>1?"s are":" is"}
+    already on the order at a different quantity or price.</strong> Those are left untouched — fix them in
+    Unleashed, or correct the quote. They are not part of what gets added.</div>`;
+  if(c.unmapped) banner += `<div class="banner b-bad"><strong>${c.unmapped} product code${c.unmapped>1?"s do":" does"}
+    not exist in Unleashed</strong> (or is obsolete). Those lines cannot be sent.</div>`;
+  if(done && c.failed) banner += `<div class="banner b-bad"><strong>${c.failed} line${c.failed>1?"s":""} failed.</strong>
+    The rest were added. Re-run the preview — anything already in will be skipped.</div>`;
+  if(done && !c.failed) banner += `<div class="banner b-ok">Added by ${escapeHtml(p.performedBy||"")}. Logged for audit.</div>`;
+  $("planBanner").innerHTML = banner;
+
+  const label = { add:["t-add","will add"], added:["t-add","added"], skipped:["t-skip","already there"],
+                  mismatch:["t-mismatch","mismatch"], unmapped:["t-unmapped","unknown code"],
+                  failed:["t-failed","failed"] };
+  $("planTbl").querySelector("tbody").innerHTML = p.plan.map(l => {
+    const [cls,txt] = label[l.outcome] || ["t-skip", l.outcome];
+    const desc = l.catalogueDescription
+      ? escapeHtml(l.catalogueDescription) + (l.productGroup ? `<div class="note">${escapeHtml(l.productGroup)}</div>` : "")
+      : `<span class="note">not found</span>`;
+    const quoteWording = l.comment && norm(l.comment) !== norm(l.catalogueDescription||"")
+      ? `<div class="note">quote says: ${escapeHtml(l.comment)}</div>` : "";
+    return `<tr>
+      <td class="num">${l.lineNumber ?? "—"}</td>
+      <td><code>${escapeHtml(l.code)}</code></td>
+      <td>${desc}${quoteWording}</td>
+      <td class="num">${l.qty}</td>
+      <td class="num">${money(l.price)}</td>
+      <td class="num">${money(l.total)}</td>
+      <td><span class="tag ${cls}">${txt}</span>${l.detail?`<div class="note">${escapeHtml(l.detail)}</div>`:""}</td>
+    </tr>`;
+  }).join("");
+
+  $("commit").classList.toggle("hide", done);
+  $("commit").disabled = !c.add;
+  $("planFoot").textContent = done
+    ? "This run is recorded in the import log."
+    : blockers
+      ? `${blockers} line${blockers>1?"s need":" needs"} attention above. You can still add the ${c.add} clean line${c.add===1?"":"s"}.`
+      : `${c.add} line${c.add===1?"":"s"} ready. Check the descriptions Unleashed reports against the quote wording before confirming.`;
+  $("planCard").classList.remove("hide");
+  $("planCard").scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+boot();
+</script>
+</body>
+</html>
